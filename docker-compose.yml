@@ -1,0 +1,65 @@
+version: "3"
+
+services:
+  web:
+    container_name: web
+    restart: always
+    build:
+      context: ./web
+      dockerfile: web.Dockerfile
+    expose:
+      - "8000"
+    links:
+      - database:database
+      - redis:redis
+    volumes:
+      - web-django:/usr/src/app
+      - web-static:/usr/src/app/static
+    env_file: .env
+
+  proxy:
+    container_name: proxy
+    restart: always
+    build:
+      context: ./proxy
+      dockerfile: proxy.Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - web-static:/www/static
+      - proxy-conf:/etc/nginx/conf.d
+    links:
+      - web:web
+
+  database:
+    container_name: database
+    restart: always
+    image: postgres:latest
+    env_file: .env
+
+    expose:
+      - 5432
+    ports:
+      - "5000:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data/
+
+  redis:
+    container_name: cache
+    restart: always
+    image: redis:latest
+
+    expose:
+      - 6379
+    ports:
+      - "6000:6379"
+
+    volumes:
+      - redis-data:/data
+
+volumes:
+  web-django:
+  web-static:
+  proxy-conf:
+  pg-data:
+  redis-data:
